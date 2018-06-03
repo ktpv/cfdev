@@ -7,10 +7,17 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	// "github.com/cloudfoundry/bosh-cli/director"
 	// "github.com/cppforlife/go-patch/patch"
+
+	boshdir "github.com/cloudfoundry/bosh-cli/director"
 )
 
-var rootDir, outputDir string
+var (
+	rootDir, outputDir string
+	director           boshdir.Director
+)
 
 func init() {
 	var err error
@@ -19,6 +26,11 @@ func init() {
 		panic(err)
 	}
 	outputDir = filepath.Join(rootDir, "output")
+
+	director, err = boshDirector()
+	if err != nil {
+		panic(err)
+	}
 }
 
 // ./scripts/generate-cloud-config -c ../cf-deployment/
@@ -149,8 +161,10 @@ func all() error {
 		return err
 	}
 
-	// fmt.Println("GENERATE CF DEPS TAR")
-	// ./scripts/build-cf-deps-tar -m output/cf.yml -c output/cloud-config.yml -r images/cf/configs/dns-runtime-config.yml
+	fmt.Println("GENERATE CF DEPS TAR")
+	if err := buildCfDepsTar(filepath.Join(outputDir, "cf.yml"), filepath.Join(outputDir, "cloud-config.yml"), filepath.Join(outputDir, "dns-runtime-config.yml")); err != nil {
+		return err
+	}
 
 	fmt.Println("GENERATE BOSH MANIFEST")
 	if err := generateBoshManifest(filepath.Join(rootDir, "..", "bosh-deployment"), false, false); err != nil {
@@ -176,6 +190,15 @@ func all() error {
 }
 
 func main() {
+	// releases, err := director.Releases()
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// for _, r := range releases {
+	// 	fmt.Printf("r: %s\n", r.Name())
+	// }
+	// os.Exit(2)
+
 	if err := all(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
